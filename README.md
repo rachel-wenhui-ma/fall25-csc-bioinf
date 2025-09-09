@@ -7,7 +7,7 @@ This repository contains weekly deliverables for the CSC 527 Bioinformatics cour
 - `week1/` - Week 1 deliverables
 - `week2/` - Week 2 deliverables
 - ...
-- `week16/` - Week 16 deliverables
+- `week10/` - Week 10 deliverables
 
 ## Environment Setup
 
