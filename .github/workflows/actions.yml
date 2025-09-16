@@ -25,3 +25,9 @@ jobs:
           echo "Found Python at: ${CODON_PYTHON}"
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
       - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      - name: Week 1 - Run genome assembly experiments
+        run: |
+          export PATH=${PATH}:${HOME}/.codon/bin
+          export CODON_PYTHON=$(find_libpython)
+          cd week1
+          bash evaluate.sh
