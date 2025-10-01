@@ -25,9 +25,20 @@ jobs:
           echo "Found Python at: ${CODON_PYTHON}"
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
       - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: Week 1 - Run genome assembly experiments
+      - name: Week 1 - Run genome assembly experiments (disabled for Week 2)
+        run: |
+          # Disabled for Week 2 submission; preserved for reference
+          # export PATH=${PATH}:${HOME}/.codon/bin
+          # export CODON_PYTHON=$(find_libpython)
+          # cd week1
+          # bash evaluate.sh | tee results.csv
+          # echo "=== Week 1 Results ==="
+          # cat results.csv
+          echo "Week 1 step disabled"
+
+      - name: Week 2 - Run Bio.motifs tests
         run: |
           export PATH=${PATH}:${HOME}/.codon/bin
           export CODON_PYTHON=$(find_libpython)
-          cd week1
-          bash evaluate.sh
+          cd week2
+          bash evaluate.sh | tee results.txt
