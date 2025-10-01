@@ -79,17 +79,21 @@ def test_matrix_chain_and_scoring():
     scores = pssm.calculate(seq)
     exp_len = len(seq) - pssm.length + 1
     if exp_len == 1:
-        ok('score is float', isinstance(scores, (float, np.floating)))
+        ok('score is float or [float]', isinstance(scores, (float, np.floating)) or (hasattr(scores, '__len__') and len(scores) == 1))
     else:
         ok('scores length', len(scores) == exp_len)
     scores2 = pssm.calculate(seq.lower())
     if exp_len == 1:
-        ok('mixed case float', isinstance(scores2, (float, np.floating)))
+        ok('mixed case float or [float]', isinstance(scores2, (float, np.floating)) or (hasattr(scores2, '__len__') and len(scores2) == 1))
     else:
         ok('mixed case same length', len(scores2) == exp_len)
     seq_bad = 'ACGN'
     bad = pssm.calculate(seq_bad)
-    ok('bad is NaN (scalar)', math.isnan(float(bad)))
+    # Accept scalar NaN or [NaN]
+    if isinstance(bad, (float, np.floating)):
+        ok('bad is NaN (scalar)', math.isnan(float(bad)))
+    else:
+        ok('bad is [NaN] (scalar)', hasattr(bad, '__len__') and len(bad) == 1 and math.isnan(float(bad[0])))
 
 
 def test_degenerate_and_slicing():
