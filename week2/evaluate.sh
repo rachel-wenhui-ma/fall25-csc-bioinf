@@ -33,7 +33,7 @@ if [ "$PY_OK" = "1" ]; then
 fi
 
 echo "-- Codon: codon2_* tests"
-( cd code && ~/.codon/bin/codon run ../test/codon2_tests.py )
+( cd code && ~/.codon/bin/codon run codon2_tests.py )
 
 echo "=== Week 2: All tests completed ==="
 
