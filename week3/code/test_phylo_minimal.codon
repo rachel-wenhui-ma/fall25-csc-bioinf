@@ -1,0 +1,147 @@
+#!/usr/bin/env codon
+"""
+Minimal Codon port of test_phylo.py
+Following the "almost no changes" principle.
+"""
+
+from tree_minimal import Tree, TreeNode
+from upgma_minimal import upgma
+from nj_minimal import neighbor_joining
+
+def _assert(cond, msg):
+    if not cond:
+        raise Exception(msg)
+
+def get_distances():
+    """Get distances using Python bridge (same as before)."""
+    from python import numpy as pnp
+    import numpy as np
+    import numpy.pybridge
+    
+    # Load the correct distances.txt file (same as Python version)
+    # Use dtype=int to match Python version exactly
+    distances: np.ndarray[int, 2] = pnp.loadtxt("../test/tests/sequence/data/distances.txt", dtype=pnp.int64)
+    return distances
+
+def get_upgma_newick():
+    """Get reference Newick string from file (same as Python version)."""
+    with open("../test/tests/sequence/data/newick_upgma.txt", "r") as file:
+        newick = file.read().strip()
+    return newick
+
+def test_distances(tree):
+    """
+    Test distances - same logic as Python version.
+    """
+    # Tree is created via UPGMA
+    # -> The distances to root should be equal for all leaf nodes
+    dist = tree.root.distance_to(tree.leaves[0])
+    for leaf in tree.leaves:
+        _assert(abs(leaf.distance_to(tree.root) - dist) < 1e-6, "Distance to root should be equal for all leaves")
+    
+    # Example topological distances (same as Python version)
+    # Use math.isclose() for precise floating point comparison in Codon
+    import math
+    dist_0_19 = tree.get_distance(0, 19, True)
+    dist_4_2 = tree.get_distance(4, 2, True)
+    print(f"Distance (0,19): {dist_0_19}")
+    print(f"Distance (4,2): {dist_4_2}")
+    _assert(math.isclose(dist_0_19, 9.0, rel_tol=1e-6), f"Topological distance (0,19) should be 9.0, got {dist_0_19}")
+    _assert(math.isclose(dist_4_2, 10.0, rel_tol=1e-6), f"Topological distance (4,2) should be 10.0, got {dist_4_2}")
+
+def test_upgma(tree, upgma_newick):
+    """
+    Test UPGMA - same logic as Python version.
+    """
+    ref_tree = Tree.from_newick(upgma_newick)
+    
+    # Same validation as Python version
+    for i in range(len(tree)):
+        for j in range(len(tree)):
+            # Check for equal distances and equal topologies (same as Python)
+            _assert(abs(tree.get_distance(i, j) - ref_tree.get_distance(i, j)) <= 1e-3, 
+                   f"Distance difference too large at ({i},{j})")
+            _assert(tree.get_distance(i, j, topological=True) == ref_tree.get_distance(i, j, topological=True),
+                   f"Topological distance mismatch at ({i},{j})")
+
+def test_neighbor_joining():
+    """
+    Test neighbor joining - same logic as Python version.
+    """
+    import numpy as np
+    
+    # Same distance matrix as Python version
+    dist = np.array([
+        [ 0,  5,  4,  7,  6,  8],
+        [ 5,  0,  7, 10,  9, 11],
+        [ 4,  7,  0,  7,  6,  8],
+        [ 7, 10,  7,  0,  5,  9],
+        [ 6,  9,  6,  5,  0,  8],
+        [ 8, 11,  8,  9,  8,  0],
+    ])
+
+    # Same reference tree as Python version
+    ref_tree = Tree(
+        TreeNode(
+            [
+                TreeNode(
+                    [
+                        TreeNode(
+                            [
+                                TreeNode(index=0),
+                                TreeNode(index=1),
+                            ],
+                            [1, 4],
+                        ),
+                        TreeNode(index=2),
+                    ],
+                    [1, 2],
+                ),
+                TreeNode(
+                    [
+                        TreeNode(index=3),
+                        TreeNode(index=4),
+                    ],
+                    [3, 2],
+                ),
+                TreeNode(index=5),
+            ],
+            [1, 1, 5],
+        )
+    )
+
+    test_tree = neighbor_joining(dist)
+
+    # Same assertion as Python version
+    _assert(test_tree == ref_tree, "Neighbor joining tree should match reference tree")
+
+def main():
+    """Main test runner - same logic as Python version."""
+    print("Running minimal Codon version of test_phylo.py...")
+    print("=" * 50)
+    
+    # Setup test data
+    distances = get_distances()
+    upgma_newick = get_upgma_newick()
+    
+    # Create UPGMA tree using algorithm (same as Python version)
+    tree = upgma(distances)
+    
+    # Run tests
+    print("Running test_distances...")
+    test_distances(tree)
+    print("✓ test_distances passed")
+    
+    print("Running test_upgma...")
+    test_upgma(tree, upgma_newick)
+    print("✓ test_upgma passed")
+    
+    print("Running test_neighbor_joining...")
+    test_neighbor_joining()
+    print("✓ test_neighbor_joining passed")
+    
+    print("=" * 50)
+    print("✓ All tests passed!")
+
+if __name__ == "__main__":
+    main()

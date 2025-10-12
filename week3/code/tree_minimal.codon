@@ -1,0 +1,387 @@
+#!/usr/bin/env codon
+"""
+Minimal Codon port of biotite tree.pyx
+Following the "almost no changes" principle.
+"""
+
+from typing import List, Optional, Set
+
+# Extend set class to make it hashable (Codon compatibility)
+# This must be placed BEFORE the TreeNode definition as instructed
+@extend
+class set:
+    def __hash__(self):
+        MAX = int.MAX
+        MASK = 2 * MAX + 1
+        n = len(self)
+        h = 1927868237 * (n + 1)
+        h &= MASK
+        for x in self:
+            hx = hash(x)
+            h ^= (hx ^ (hx << 16) ^ 89869747) * 3644798167
+            h &= MASK
+        h = h * 69069 + 907133923
+        h &= MASK
+        if h > MAX:
+            h -= MASK + 1
+        if h == -1:
+            h = 590923713
+        return h
+
+class TreeNode:
+    """Minimal port of biotite TreeNode with same constructor signature."""
+    children: List[TreeNode]
+    distance: float
+    index: Optional[int]
+    parent: Optional[TreeNode]
+    
+    def __init__(self, children=None, distances=None, index=None):
+        """Same signature as biotite: TreeNode(children, distances, index)"""
+        # Convert tuple to list if needed (Codon compatibility)
+        if children is not None:
+            if isinstance(children, tuple):
+                self.children = list(children)
+            else:
+                self.children = children
+        else:
+            self.children = []
+            
+        self.distance = 0.0
+        if index is None:
+            self.index = None
+        else:
+            self.index = index
+        self.parent = None
+        
+        # Set parent pointers and distances for children (same as biotite)
+        if children is not None:
+            if distances is None:
+                distances_list = [0.0] * len(self.children)
+            elif isinstance(distances, tuple):
+                distances_list = list(distances)
+            else:
+                distances_list = distances
+            for i, child in enumerate(self.children):
+                child.parent = self
+                if i < len(distances_list):
+                    child.distance = distances_list[i]
+    
+    def is_leaf(self):
+        """Check if this node is a leaf."""
+        return self.index is not None and len(self.children) == 0
+    
+    def is_root(self):
+        """Check if this node is root."""
+        return self.parent is None
+    
+    def as_root(self):
+        """Mark this node as root (make immutable)."""
+        self.parent = None
+    
+    def get_leaves(self):
+        """Get all leaf nodes in this subtree."""
+        if self.is_leaf():
+            return [self]
+        
+        leaves: List[TreeNode] = []
+        for child in self.children:
+            leaves.extend(child.get_leaves())
+        return leaves
+    
+    def get_leaf_count(self):
+        """Get count of leaf nodes."""
+        if self.is_leaf():
+            return 1
+        return sum(child.get_leaf_count() for child in self.children)
+    
+    def distance_to(self, other: TreeNode, topological: bool = False) -> float:
+        """Calculate distance to another node."""
+        if other is None:
+            return 0.0
+            
+        lca = self._lowest_common_ancestor(other)
+        if lca is None:
+            raise Exception("The nodes do not have a common ancestor")
+        
+        # Sum distances until LCA has been reached
+        distance = 0.0
+        
+        # Distance from self to LCA
+        current: Optional[TreeNode] = self
+        while current is not None and current is not lca:
+            if topological:
+                distance += 1.0
+            else:
+                distance += current.distance
+            current = current.parent
+        
+        # Distance from other to LCA
+        current = other
+        while current is not None and current is not lca:
+            if topological:
+                distance += 1.0
+            else:
+                distance += current.distance
+            current = current.parent
+        
+        return distance
+    
+    def _lowest_common_ancestor(self, other: TreeNode) -> Optional[TreeNode]:
+        """Get the lowest common ancestor of this node and another node."""
+        # Create paths from both nodes to root (same as biotite)
+        self_path = self._path_to_root()
+        other_path = other._path_to_root()
+        
+        # Reverse iteration through path (beginning from root) - same as biotite
+        # until the paths diverge
+        lca = None
+        min_len = min(len(self_path), len(other_path))
+        # Start from root (index 0) and go towards leaves
+        for i in range(min_len):
+            if self_path[i] is other_path[i]:
+                # Same node -> common ancestor
+                lca = self_path[i]
+            else:
+                # Different node -> Not common ancestor
+                # -> return last common ancestor found
+                break
+        return lca
+    
+    def _path_to_root(self) -> List[TreeNode]:
+        """Create a list of nodes representing the path from this node to root."""
+        path: List[TreeNode] = []
+        current: Optional[TreeNode] = self
+        while current is not None:
+            path.append(current)
+            current = current.parent
+        path.reverse()  # 添加这一行，保持与Biotite一致
+        return path
+    
+    def to_newick(self, labels=None, include_distance=True, round_distance=None):
+        """Convert to Newick string (same logic as biotite)."""
+        if self.is_leaf():
+            if labels is not None:
+                label = list(labels)[self.index]
+                # Escape special characters
+                for ch in [",", ":", ";", "(", ")"]:
+                    if ch in label:
+                        label = label.replace(ch, "_")
+            else:
+                label = str(self.index)
+            
+            if include_distance:
+                if round_distance is not None:
+                    rounded_val = round(self.distance * (10 ** round_distance)) / (10 ** round_distance)
+                    return label + ":" + str(rounded_val)
+                else:
+                    return label + ":" + str(self.distance)
+            return label
+        
+        parts = [child.to_newick(labels, include_distance, round_distance) for child in self.children]
+        if include_distance:
+            if round_distance is not None:
+                rounded_val = round(self.distance * (10 ** round_distance)) / (10 ** round_distance)
+                return "(" + ",".join(parts) + "):" + str(rounded_val)
+            else:
+                return "(" + ",".join(parts) + "):" + str(self.distance)
+        return "(" + ",".join(parts) + ")"
+    
+    @staticmethod
+    def from_newick(newick, labels=None):
+        """Parse Newick string (same algorithm as biotite)."""
+        newick = "".join(newick.split())  # Remove whitespace
+        
+        # Find brackets
+        start = -1
+        stop = -1
+        for i, ch in enumerate(newick):
+            if ch == "(":
+                start = i
+                break
+            if ch == ")":
+                return TreeNode(index=0), 0.0
+        
+        for i in range(len(newick) - 1, -1, -1):
+            ch = newick[i]
+            if ch == ")":
+                stop = i + 1
+                break
+            if ch == "(":
+                return TreeNode(index=0), 0.0
+        
+        if start == -1 and stop == -1:
+            # Leaf node
+            s = newick
+            if ":" in s:
+                label, d = s.split(":", 1)
+                dist = float(d)
+            else:
+                label = s
+                dist = 0.0
+            idx = int(label) if labels is None else labels.index(label)
+            return TreeNode(index=idx), dist
+        
+        if stop == len(newick):
+            dist = 0.0
+        else:
+            tail = newick[stop:]
+            if ":" in tail:
+                _, d = tail.split(":", 1)
+                dist = float(d)
+            else:
+                dist = 0.0
+        
+        sub = newick[start + 1 : stop - 1]
+        if len(sub) == 0:
+            return TreeNode(index=0), dist
+        
+        # Parse children
+        parts = []
+        level = 0
+        last = 0
+        for i, ch in enumerate(sub):
+            if ch == "(":
+                level += 1
+            elif ch == ")":
+                level -= 1
+                if level < 0:
+                    return TreeNode(index=0), dist
+            elif ch == "," and level == 0:
+                parts.append(sub[last:i])
+                last = i + 1
+        parts.append(sub[last:])
+        
+        children = []
+        distances = []
+        for p in parts:
+            child, d = TreeNode.from_newick(p, labels=labels)
+            children.append(child)
+            distances.append(d)
+        
+        node = TreeNode(children, distances)
+        node.distance = dist
+        return node, dist
+    
+    def copy(self):
+        """Create a copy of this node."""
+        if self.is_leaf():
+            return TreeNode(index=self.index)
+        return TreeNode([c.copy() for c in self.children], [c.distance for c in self.children])
+    
+    def __str__(self):
+        return self.to_newick()
+    
+    def _canon_sig(self) -> str:
+        # 规范签名：顺序无关 + 含分支长度（四舍五入稳定浮点）
+        dist = round(self.distance, 12)
+        if self.is_leaf():
+            idx = self.index if self.index is not None else -1
+            return f"L({idx}:{dist})"
+        # 内部结点：对子签名排序以消除孩子顺序影响
+        child_sigs = [child._canon_sig() for child in self.children]
+        child_sigs.sort()
+        return f"N({';'.join(child_sigs)}:{dist})"
+
+    def __eq__(self, other):
+        if not isinstance(other, TreeNode):
+            return False
+        return self._canon_sig() == other._canon_sig()
+
+    def __hash__(self):
+        return hash(self._canon_sig())
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class Tree:
+    """Minimal port of biotite Tree class."""
+    _root: TreeNode
+    _leaves: List[Optional[TreeNode]]
+    
+    def __init__(self, root):
+        """Same signature as biotite: Tree(root)"""
+        root.as_root()
+        self._root = root
+        
+        leaves_unsorted = self._root.get_leaves()
+        leaf_count = len(leaves_unsorted)
+        
+        # Create leaves array sorted by index (same as biotite)
+        indices = [leaf.index for leaf in leaves_unsorted]
+        self._leaves: List[Optional[TreeNode]] = [None] * leaf_count
+        
+        for i in range(len(indices)):
+            index = indices[i]
+            if index >= leaf_count or index < 0:
+                raise Exception("The tree's indices are out of range")
+            self._leaves[index] = leaves_unsorted[i]
+    
+    @property
+    def root(self):
+        return self._root
+    
+    @property
+    def leaves(self):
+        return [leaf for leaf in self._leaves if leaf is not None]
+    
+    def __len__(self):
+        return len(self._leaves)
+    
+    def get_distance(self, i, j, topological=False):
+        """Get distance between leaf nodes i and j."""
+        if i >= len(self._leaves) or j >= len(self._leaves):
+            return 0.0
+        
+        leaf_i = self._leaves[i]
+        leaf_j = self._leaves[j]
+        
+        if leaf_i is None or leaf_j is None:
+            return 0.0
+        
+        if topological:
+            # 计边数 (Count edges)
+            return float(leaf_i.distance_to(leaf_j, topological=True))
+        else:
+            # 累加分支长度 (Accumulate branch length)
+            return leaf_i.distance_to(leaf_j, topological=False)
+    
+    def to_newick(self, labels=None, include_distance=True, round_distance=None):
+        """Convert to Newick string."""
+        return self._root.to_newick(labels, include_distance, round_distance) + ";"
+    
+    @staticmethod
+    def from_newick(newick, labels=None):
+        """Create tree from Newick string (same as biotite)."""
+        newick = newick.strip()
+        if len(newick) == 0:
+            raise Exception("Newick string is empty")
+        if newick[-1] == ";":
+            newick = newick[:-1]
+        root, distance = TreeNode.from_newick(newick, labels)
+        return Tree(root)
+    
+    def copy(self):
+        """Create a copy of this tree."""
+        return Tree(self._root.copy())
+    
+    def __eq__(self, other):
+        if not isinstance(other, Tree):
+            return False
+        return self._root == other._root
+    
+    def __hash__(self):
+        return hash(self._root)
+    
+    def __str__(self):
+        return self.to_newick()
+
+
+def as_binary(tree_or_node):
+    """Convert to binary tree (placeholder implementation)."""
+    if isinstance(tree_or_node, Tree):
+        return Tree(tree_or_node.root.copy())
+    elif isinstance(tree_or_node, TreeNode):
+        return tree_or_node.copy()
+    else:
+        return tree_or_node

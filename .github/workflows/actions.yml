@@ -36,9 +36,18 @@ jobs:
           # cat results.csv
           echo "Week 1 step disabled"
 
-      - name: Week 2 - Run Bio.motifs tests
+      - name: Week 2 - Run Bio.motifs tests (disabled for Week 3)
+        run: |
+          # Disabled for Week 3 submission; preserved for reference
+          # export PATH=${PATH}:${HOME}/.codon/bin
+          # export CODON_PYTHON=$(find_libpython)
+          # cd week2
+          # bash evaluate.sh | tee results.txt
+          echo "Week 2 step disabled"
+
+      - name: Week 3 - Run Phylogenetic Tree Algorithms
         run: |
           export PATH=${PATH}:${HOME}/.codon/bin
           export CODON_PYTHON=$(find_libpython)
-          cd week2
+          cd week3
           bash evaluate.sh | tee results.txt
