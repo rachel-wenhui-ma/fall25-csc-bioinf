@@ -91,21 +91,15 @@ echo ""
 echo "========== LONG SEQUENCES (MT-human vs MT-orang) =========="
 echo ""
 
-# Run Python tests (skip in CI due to long runtime ~27 minutes)
-if [ -n "$CI" ]; then
-    echo "Skipping Python long sequence tests in CI (too slow, ~27 minutes)"
-    echo "Python estimated time: ~1665000ms"
-    python_time=1665000
-else
-    echo "Testing Python implementation..."
-    python_start=$(date +%s%3N)
-    cd python
-    python -u test_long_sequences.py
-    cd ..
-    python_end=$(date +%s%3N)
-    python_time=$((python_end - python_start))
-    echo "  ✓ Python tests completed"
-fi
+# Run Python tests (TEMPORARY: testing in CI to measure actual runtime)
+echo "Testing Python implementation (measuring runtime in CI)..."
+python_start=$(date +%s%3N)
+cd python
+python -u test_long_sequences.py
+cd ..
+python_end=$(date +%s%3N)
+python_time=$((python_end - python_start))
+echo "  ✓ Python tests completed"
 
 # Run Codon tests
 echo ""
