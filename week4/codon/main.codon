@@ -1,0 +1,102 @@
+from python import os
+
+from alignments import global_alignment, local_alignment, fitting_alignment, affine_global
+from fasta_io import read_all_fasta
+
+
+def run_all_tests():
+    """
+    Run four alignment algorithms:
+        1. Global (Needleman–Wunsch)
+        2. Local (Smith–Waterman)
+        3. Fitting (semi-global)
+        4. Global with affine gap penalty
+    The following pairs are tested:
+        q1-t1, q2-t2, q3-t3, q4-t4, q5-t5, MT-human vs MT-orang
+    """
+    DATA_DIR = "../data"
+
+    # Store results as separate lists
+    queries: List[str] = []
+    targets: List[str] = []
+    global_scores: List[int] = []
+    local_scores: List[int] = []
+    fitting_scores: List[int] = []
+    affine_scores: List[int] = []
+
+    # Read all sequences from q*.fa and t*.fa files
+    q_file = str(os.path.join(DATA_DIR, "q1.fa"))
+    t_file = str(os.path.join(DATA_DIR, "t1.fa"))
+    
+    q_sequences = read_all_fasta(q_file)
+    t_sequences = read_all_fasta(t_file)
+    
+    # Pair up sequences by index (q1 with t1, q2 with t2, etc.)
+    for (q_header, q_seq), (t_header, t_seq) in zip(q_sequences, t_sequences):
+        print(f"\n=== Running {q_header} vs {t_header} ===")
+        
+        queries.append(q_header)
+        targets.append(t_header)
+
+        # 1. Global alignment
+        score, _, _ = global_alignment(q_seq, t_seq)
+        global_scores.append(int(score))
+
+        # 2. Local alignment
+        score, _, _ = local_alignment(q_seq, t_seq)
+        local_scores.append(int(score))
+
+        # 3. Fitting alignment
+        score, _, _ = fitting_alignment(q_seq, t_seq)
+        fitting_scores.append(int(score))
+
+        # 4. Affine-gap global alignment
+        score, _, _ = affine_global(q_seq, t_seq)
+        affine_scores.append(int(score))
+    
+    # Also test MT-human vs MT-orang
+    # mt_human = read_all_fasta(ospath.join(DATA_DIR, "MT-human.fa"))
+    # mt_orang = read_all_fasta(ospath.join(DATA_DIR, "MT-orang.fa"))
+    
+    # if mt_human and mt_orang:
+    #     q_header, q_seq = mt_human[0]
+    #     t_header, t_seq = mt_orang[0]
+        
+    #     print(f"\n=== Running {q_header} vs {t_header} ===")
+    #     row: Dict[str, object] = {"query": q_header, "target": t_header}
+
+    #     # 1. Global alignment
+    #     score, _, _ = global_alignment(q_seq, t_seq)
+    #     row["Global_score"] = score
+
+    #     # 2. Local alignment
+    #     score, _, _ = local_alignment(q_seq, t_seq)
+    #     row["Local_score"] = score
+
+    #     # 3. Fitting alignment
+    #     score, _, _ = fitting_alignment(q_seq, t_seq)
+    #     row["Fitting_score"] = score
+
+    #     # 4. Affine-gap global alignment
+    #     score, _, _ = affine_global(q_seq, t_seq)
+    #     row["Affine_score"] = score
+
+    #     results.append(row)
+
+    # Print results
+    print("\n" + "="*80)
+    print("ALIGNMENT RESULTS")
+    print("="*80)
+    for i in range(len(queries)):
+        print(f"\nQuery: {queries[i]}, Target: {targets[i]}")
+        print(f"  Global score:  {global_scores[i]}")
+        print(f"  Local score:   {local_scores[i]}")
+        print(f"  Fitting score: {fitting_scores[i]}")
+        print(f"  Affine score:  {affine_scores[i]}")
+    print("\n" + "="*80)
+    print("All alignments completed.")
+
+
+if __name__ == "__main__":
+    run_all_tests()
+

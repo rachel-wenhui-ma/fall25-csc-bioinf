@@ -1,0 +1,31 @@
+def read_all_fasta(path):
+    """Read all sequences from a FASTA file.
+    Returns a list of (header, sequence) tuples.
+    """
+    with open(path) as f:
+        lines = f.readlines()
+    
+    sequences = []
+    current_header = ""
+    current_seq = []
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        
+        if line.startswith(">"):
+            # Save previous sequence if exists
+            if current_header:
+                sequences.append((current_header, "".join(current_seq)))
+            # Start new sequence
+            current_header = line[1:]
+            current_seq = []
+        else:
+            current_seq.append(line)
+    
+    # Don't forget the last sequence
+    if current_header:
+        sequences.append((current_header, "".join(current_seq)))
+    
+    return sequences

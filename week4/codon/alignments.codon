@@ -1,0 +1,190 @@
+import numpy as np
+
+# =====================================================
+# 1. Global Alignment (Needleman–Wunsch)
+# =====================================================
+def global_alignment(a: str, b: str, match: int = 3, mismatch: int = -3, gap: int = -2):
+    """
+    Global alignment (Needleman–Wunsch).
+    Performs full end-to-end alignment.
+    """
+    n, m = len(a), len(b)
+    F = np.zeros((n + 1, m + 1), dtype=np.int64)
+
+    # Initialize
+    for i in range(1, n + 1):
+        F[i, 0] = F[i - 1, 0] + gap
+    for j in range(1, m + 1):
+        F[0, j] = F[0, j - 1] + gap
+
+    # Fill DP matrix
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            diag = F[i - 1, j - 1] + (match if a[i - 1] == b[j - 1] else mismatch)
+            up = F[i - 1, j] + gap
+            left = F[i, j - 1] + gap
+            F[i, j] = max(diag, up, left)
+
+    # Traceback
+    aln_a, aln_b = [], []
+    i, j = n, m
+    while i > 0 or j > 0:
+        if i > 0 and j > 0 and F[i, j] == F[i - 1, j - 1] + (match if a[i - 1] == b[j - 1] else mismatch):
+            aln_a.append(a[i - 1]); aln_b.append(b[j - 1]); i -= 1; j -= 1
+        elif i > 0 and F[i, j] == F[i - 1, j] + gap:
+            aln_a.append(a[i - 1]); aln_b.append('-'); i -= 1
+        else:
+            aln_a.append('-'); aln_b.append(b[j - 1]); j -= 1
+
+    aln_a.reverse(); aln_b.reverse()
+    return F[n, m], "".join(aln_a), "".join(aln_b)
+
+
+# =====================================================
+# 2. Local Alignment (Smith–Waterman)
+# =====================================================
+def local_alignment(a: str, b: str, match: int = 3, mismatch: int = -3, gap: int = -2):
+    """
+    Local alignment (Smith–Waterman).
+    Finds the highest-scoring local region.
+    """
+    n, m = len(a), len(b)
+    F = np.zeros((n + 1, m + 1), dtype=np.int64)
+
+    max_score = 0
+    max_pos = (0, 0)
+
+    # Fill matrix
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            diag = F[i - 1, j - 1] + (match if a[i - 1] == b[j - 1] else mismatch)
+            up = F[i - 1, j] + gap
+            left = F[i, j - 1] + gap
+            F[i, j] = max(0, diag, up, left)
+            if F[i, j] > max_score:
+                max_score, max_pos = F[i, j], (i, j)
+
+    # Traceback
+    aln_a, aln_b = [], []
+    i, j = max_pos
+    while i > 0 and j > 0 and F[i, j] > 0:
+        if F[i, j] == F[i - 1, j - 1] + (match if a[i - 1] == b[j - 1] else mismatch):
+            aln_a.append(a[i - 1]); aln_b.append(b[j - 1]); i -= 1; j -= 1
+        elif F[i, j] == F[i - 1, j] + gap:
+            aln_a.append(a[i - 1]); aln_b.append('-'); i -= 1
+        else:
+            aln_a.append('-'); aln_b.append(b[j - 1]); j -= 1
+
+    aln_a.reverse(); aln_b.reverse()
+    return max_score, "".join(aln_a), "".join(aln_b)
+
+
+# =====================================================
+# 3. Fitting Alignment (Semi-global)
+# =====================================================
+def fitting_alignment(a: str, b: str, match: int = 3, mismatch: int = -3, gap: int = -2):
+    """
+    Fitting alignment: short sequence (a) must fully align to a substring of (b).
+    Query (a) must align completely, but can start anywhere in target (b).
+    """
+    n, m = len(a), len(b)
+    F = np.zeros((n + 1, m + 1), dtype=np.int64)
+    
+    # Initialize: target can start anywhere (no penalty)
+    F[0, :] = 0
+    # But query must align from start (accumulate gap penalty)
+    for i in range(1, n + 1):
+        F[i, 0] = F[i - 1, 0] + gap
+
+    # Fill matrix
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            diag = F[i - 1, j - 1] + (match if a[i - 1] == b[j - 1] else mismatch)
+            up = F[i - 1, j] + gap
+            left = F[i, j - 1] + gap
+            F[i, j] = max(diag, up, left)
+
+    # Find best end position (last row)
+    j = np.argmax(F[n, :])
+    score = F[n, j]
+
+    # Traceback
+    aln_a, aln_b = [], []
+    i = n
+    while i > 0 and j > 0:
+        if F[i, j] == F[i - 1, j - 1] + (match if a[i - 1] == b[j - 1] else mismatch):
+            aln_a.append(a[i - 1]); aln_b.append(b[j - 1]); i -= 1; j -= 1
+        elif F[i, j] == F[i - 1, j] + gap:
+            aln_a.append(a[i - 1]); aln_b.append('-'); i -= 1
+        else:
+            aln_a.append('-'); aln_b.append(b[j - 1]); j -= 1
+
+    aln_a.reverse(); aln_b.reverse()
+    return score, "".join(aln_a), "".join(aln_b)
+
+
+# =====================================================
+# 4. Affine Gap Global Alignment
+# =====================================================
+def affine_global(a: str, b: str, match: int = 3, mismatch: int = -3, gap_open: int = -5, gap_extend: int = -1):
+    """
+    Global alignment with affine gap penalty.
+    Three matrices: M (match), Ix (gap in A), Iy (gap in B).
+    """
+    n, m = len(a), len(b)
+    NEG_INF = -10**9
+
+    M = np.full((n + 1, m + 1), NEG_INF, dtype=np.int64)
+    Ix = np.full((n + 1, m + 1), NEG_INF, dtype=np.int64)
+    Iy = np.full((n + 1, m + 1), NEG_INF, dtype=np.int64)
+
+    trace_M = np.full((n + 1, m + 1), -1, dtype=np.int64)
+    trace_Ix = np.full((n + 1, m + 1), -1, dtype=np.int64)
+    trace_Iy = np.full((n + 1, m + 1), -1, dtype=np.int64)
+
+    M[0, 0] = 0
+    for i in range(1, n + 1):
+        Ix[i, 0] = gap_open + (i - 1) * gap_extend
+        trace_Ix[i, 0] = 1
+    for j in range(1, m + 1):
+        Iy[0, j] = gap_open + (j - 1) * gap_extend
+        trace_Iy[0, j] = 2
+
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            s = match if a[i - 1] == b[j - 1] else mismatch
+            from_M = M[i - 1, j - 1] + s
+            from_Ix = Ix[i - 1, j - 1] + s
+            from_Iy = Iy[i - 1, j - 1] + s
+            M[i, j] = max(from_M, from_Ix, from_Iy)
+            trace_M[i, j] = np.argmax([from_M, from_Ix, from_Iy])
+
+            from_M = M[i - 1, j] + gap_open + gap_extend
+            from_Ix = Ix[i - 1, j] + gap_extend
+            Ix[i, j] = max(from_M, from_Ix)
+            trace_Ix[i, j] = 0 if from_M >= from_Ix else 1
+
+            from_M = M[i, j - 1] + gap_open + gap_extend
+            from_Iy = Iy[i, j - 1] + gap_extend
+            Iy[i, j] = max(from_M, from_Iy)
+            trace_Iy[i, j] = 0 if from_M >= from_Iy else 2
+
+    last_scores = [M[n, m], Ix[n, m], Iy[n, m]]
+    state = np.argmax(last_scores)
+    score = last_scores[state]
+
+    aln_a, aln_b = [], []
+    i, j = n, m
+    while i > 0 or j > 0:
+        if state == 0:
+            prev = trace_M[i, j]; aln_a.append(a[i - 1]); aln_b.append(b[j - 1]); i -= 1; j -= 1; state = prev
+        elif state == 1:
+            prev = trace_Ix[i, j]; aln_a.append(a[i - 1]); aln_b.append('-'); i -= 1; state = prev
+        elif state == 2:
+            prev = trace_Iy[i, j]; aln_a.append('-'); aln_b.append(b[j - 1]); j -= 1; state = prev
+        else:
+            break
+
+    aln_a.reverse(); aln_b.reverse()
+    return score, "".join(aln_a), "".join(aln_b)
+

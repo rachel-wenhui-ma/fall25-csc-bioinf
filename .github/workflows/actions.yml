@@ -45,9 +45,19 @@ jobs:
           # bash evaluate.sh | tee results.txt
           echo "Week 2 step disabled"
 
-      - name: Week 3 - Run Phylogenetic Tree Algorithms
+      - name: Week 3 - Run Phylogenetic Tree Algorithms (disabled for Week 4)
+        run: |
+          # Disabled for Week 4 submission; preserved for reference
+          # export PATH=${PATH}:${HOME}/.codon/bin
+          # export CODON_PYTHON=$(find_libpython)
+          # cd week3
+          # bash evaluate.sh | tee results.txt
+          echo "Week 3 step disabled"
+
+      - name: Week 4 - Run Sequence Alignment Algorithms
         run: |
           export PATH=${PATH}:${HOME}/.codon/bin
           export CODON_PYTHON=$(find_libpython)
-          cd week3
+          pip install numpy
+          cd week4
           bash evaluate.sh | tee results.txt
