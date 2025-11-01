@@ -88,11 +88,11 @@ jobs:
           ls -lh results/
           echo ""
           echo "=== Checking Step 3 VCF files ==="
-          if [ -f results/illumina.vcf.gz ]; then
-            echo "Illumina variants: $(bcftools view -H results/illumina.vcf.gz | wc -l)"
+          if [ -f results/illumina.vcf ]; then
+            echo "Illumina variants: $(bcftools view -H results/illumina.vcf | wc -l)"
           fi
-          if [ -f results/pacbio.vcf.gz ]; then
-            echo "PacBio variants: $(bcftools view -H results/pacbio.vcf.gz | wc -l)"
+          if [ -f results/pacbio.vcf ]; then
+            echo "PacBio variants: $(bcftools view -H results/pacbio.vcf | wc -l)"
           fi
           echo ""
           echo "=== Checking Step 4 phasing output ==="
@@ -107,6 +107,14 @@ jobs:
             echo "PacBio phased blocks: $(grep -c "BLOCK" results/pacbio_phased.hapcut || echo 0)"
           else
             echo "WARNING: pacbio_phased.hapcut not found"
+          fi
+          echo ""
+          echo "=== Checking phased VCF files ==="
+          if [ -f results/illumina_phased.vcf ]; then
+            echo "Illumina phased VCF lines: $(wc -l < results/illumina_phased.vcf)"
+          fi
+          if [ -f results/pacbio_phased.vcf ]; then
+            echo "PacBio phased VCF lines: $(wc -l < results/pacbio_phased.vcf)"
           fi
           
       - name: Week 5 - Check outputs
@@ -124,8 +132,7 @@ jobs:
           path: |
             week5/results/*.bam
             week5/results/*.bam.bai
-            week5/results/*.vcf.gz
-            week5/results/*.vcf.gz.csi
+            week5/results/*.vcf
             week5/results/*.hapcut
             week5/results/*_fragments.txt
             week5/results/chr10.fa
