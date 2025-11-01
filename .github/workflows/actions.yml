@@ -86,6 +86,28 @@ jobs:
           echo ""
           echo "=== Checking results directory ==="
           ls -lh results/
+          echo ""
+          echo "=== Checking Step 3 VCF files ==="
+          if [ -f results/illumina.vcf.gz ]; then
+            echo "Illumina variants: $(bcftools view -H results/illumina.vcf.gz | wc -l)"
+          fi
+          if [ -f results/pacbio.vcf.gz ]; then
+            echo "PacBio variants: $(bcftools view -H results/pacbio.vcf.gz | wc -l)"
+          fi
+          echo ""
+          echo "=== Checking Step 4 phasing output ==="
+          if [ -f results/illumina_phased.hapcut ]; then
+            echo "Illumina HapCUT2 output lines: $(wc -l < results/illumina_phased.hapcut)"
+            echo "Illumina phased blocks: $(grep -c "BLOCK" results/illumina_phased.hapcut || echo 0)"
+          else
+            echo "WARNING: illumina_phased.hapcut not found"
+          fi
+          if [ -f results/pacbio_phased.hapcut ]; then
+            echo "PacBio HapCUT2 output lines: $(wc -l < results/pacbio_phased.hapcut)"
+            echo "PacBio phased blocks: $(grep -c "BLOCK" results/pacbio_phased.hapcut || echo 0)"
+          else
+            echo "WARNING: pacbio_phased.hapcut not found"
+          fi
           
       - name: Week 5 - Check outputs
         shell: bash -l {0}
@@ -105,5 +127,7 @@ jobs:
             week5/results/*.vcf.gz
             week5/results/*.vcf.gz.csi
             week5/results/*.hapcut
+            week5/results/*_fragments.txt
             week5/results/chr10.fa
+            week5/week5_executed.ipynb
           retention-days: 7
