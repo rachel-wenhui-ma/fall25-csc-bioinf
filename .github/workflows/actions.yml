@@ -80,7 +80,12 @@ jobs:
         shell: bash -l {0}
         run: |
           cd week5
-          jupyter execute week5.ipynb
+          echo "=== Starting notebook execution ==="
+          jupyter nbconvert --to notebook --execute week5.ipynb --output week5_executed.ipynb --ExecutePreprocessor.timeout=3600
+          echo "=== Notebook execution complete ==="
+          echo ""
+          echo "=== Checking results directory ==="
+          ls -lh results/
           
       - name: Week 5 - Check outputs
         shell: bash -l {0}
