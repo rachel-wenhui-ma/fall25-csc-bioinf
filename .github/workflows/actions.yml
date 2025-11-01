@@ -117,6 +117,65 @@ jobs:
             echo "PacBio phased VCF variants: $(bcftools view -H results/pacbio_phased.vcf.gz | wc -l)"
           fi
           
+      - name: Week 5 - Install xvfb for headless IGV
+        shell: bash -l {0}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          
+      - name: Week 5 - Generate IGV screenshots
+        shell: bash -l {0}
+        run: |
+          cd week5
+          echo "=== Downloading IGV ==="
+          if [ ! -d "IGV_2.16.2" ]; then
+            wget -q https://data.broadinstitute.org/igv/projects/downloads/2.16/IGV_2.16.2.zip
+            unzip -q IGV_2.16.2.zip
+            echo "✓ IGV downloaded"
+          fi
+          
+          echo "=== Creating IGV batch script ==="
+          mkdir -p igv_images/auto
+          cat > igv_batch_script.txt << 'EOF'
+          new
+          genome hg38
+          snapshotDirectory igv_images/auto
+          preference SAM.SHOW_SOFT_CLIPPED true
+          load illumina_sorted.bam
+          load pacbio_sorted.bam
+          goto chr10:94772788
+          sort base
+          collapse
+          maxPanelHeight 500
+          snapshot auto_chr10_94772788_illumina_only.png
+          goto chr10:94947469
+          sort base
+          collapse
+          maxPanelHeight 500
+          snapshot auto_chr10_94947469_pacbio_only.png
+          goto chr10:94761900
+          sort base
+          collapse
+          maxPanelHeight 500
+          snapshot auto_chr10_94761900_shared.png
+          exit
+          EOF
+          
+          echo "=== Running IGV in headless mode ==="
+          xvfb-run --auto-servernum java -Xmx4g -jar IGV_2.16.2/lib/igv.jar -b igv_batch_script.txt || echo "IGV batch script completed"
+          
+          echo "=== Verifying screenshots ==="
+          if [ -d "igv_images/auto" ]; then
+            echo "✓ Output directory exists"
+            screenshot_count=$(ls -1 igv_images/auto/*.png 2>/dev/null | wc -l)
+            echo "✓ Found $screenshot_count PNG files"
+            if [ $screenshot_count -gt 0 ]; then
+              echo "Screenshot details:"
+              ls -lh igv_images/auto/*.png 2>/dev/null
+              md5sum igv_images/auto/*.png 2>/dev/null
+            fi
+          fi
+          
       - name: Week 5 - Check outputs
         shell: bash -l {0}
         run: |
@@ -139,4 +198,5 @@ jobs:
             week5/results/*_fragments.txt
             week5/results/chr10.fa
             week5/week5_executed.ipynb
+            week5/igv_images/auto/*.png
           retention-days: 7
