@@ -110,11 +110,11 @@ jobs:
           fi
           echo ""
           echo "=== Checking phased VCF files ==="
-          if [ -f results/illumina_phased.vcf ]; then
-            echo "Illumina phased VCF lines: $(wc -l < results/illumina_phased.vcf)"
+          if [ -f results/illumina_phased.vcf.gz ]; then
+            echo "Illumina phased VCF variants: $(bcftools view -H results/illumina_phased.vcf.gz | wc -l)"
           fi
-          if [ -f results/pacbio_phased.vcf ]; then
-            echo "PacBio phased VCF lines: $(wc -l < results/pacbio_phased.vcf)"
+          if [ -f results/pacbio_phased.vcf.gz ]; then
+            echo "PacBio phased VCF variants: $(bcftools view -H results/pacbio_phased.vcf.gz | wc -l)"
           fi
           
       - name: Week 5 - Check outputs
@@ -133,6 +133,8 @@ jobs:
             week5/results/*.bam
             week5/results/*.bam.bai
             week5/results/*.vcf
+            week5/results/*.vcf.gz
+            week5/results/*.vcf.gz.csi
             week5/results/*.hapcut
             week5/results/*_fragments.txt
             week5/results/chr10.fa
