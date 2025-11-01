@@ -54,10 +54,52 @@ jobs:
           # bash evaluate.sh | tee results.txt
           echo "Week 3 step disabled"
 
-      - name: Week 4 - Run Sequence Alignment Algorithms
+      - name: Week 4 - Run Sequence Alignment Algorithms (disabled for Week 5)
         run: |
-          export PATH=${PATH}:${HOME}/.codon/bin
-          export CODON_PYTHON=$(find_libpython)
-          pip install numpy
-          cd week4
-          bash evaluate.sh | tee results.txt
+          # Disabled for Week 5 submission; preserved for reference
+          # export PATH=${PATH}:${HOME}/.codon/bin
+          # export CODON_PYTHON=$(find_libpython)
+          # pip install numpy
+          # cd week4
+          # bash evaluate.sh | tee results.txt
+          echo "Week 4 step disabled"
+
+      - name: Week 5 - Setup Miniconda for bioinformatics tools
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: 3.9
+          channels: bioconda,conda-forge,defaults
+          channel-priority: strict
+
+      - name: Week 5 - Install bioinformatics tools
+        shell: bash -l {0}
+        run: |
+          conda install -c bioconda minimap2 samtools bcftools hapcut2 whatshap htslib jupyter pysam -y
+
+      - name: Week 5 - Run bioinformatics pipeline
+        shell: bash -l {0}
+        run: |
+          cd week5
+          jupyter execute week5.ipynb
+          
+      - name: Week 5 - Check outputs
+        shell: bash -l {0}
+        run: |
+          cd week5
+          echo "=== Results directory ==="
+          ls -lh results/ 2>/dev/null || echo "No result files"
+          
+      - name: Week 5 - Upload results as artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: week5-results
+          path: |
+            week5/results/*.bam
+            week5/results/*.bam.bai
+            week5/results/*.vcf.gz
+            week5/results/*.vcf.gz.csi
+            week5/results/*.hapcut
+            week5/results/chr10.fa
+          retention-days: 7

@@ -1,0 +1,37 @@
+# Ignore contents of data and results directories
+data/*
+results/*
+
+# But keep the directory structure
+!data/.gitkeep
+!results/.gitkeep
+
+# Ignore all FASTQ/FASTA files
+*.fq
+*.fa
+*.fasta
+*.fastq
+
+# Ignore all BAM/SAM files
+*.bam
+*.bam.bai
+*.sam
+
+# Ignore all VCF files
+*.vcf
+*.vcf.gz
+*.vcf.gz.csi
+*.vcf.gz.tbi
+
+# Ignore HapCUT2 output files
+*_fragments.txt
+*_phased.hapcut
+*_phased.vcf
+*_phased.vcf.gz
+*_phased.vcf.gz.csi
+
+# Ignore compressed files
+*.gz
+*.bz2
+*.zip
+
