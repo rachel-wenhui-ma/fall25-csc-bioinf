@@ -74,7 +74,7 @@ jobs:
       - name: Week 5 - Install bioinformatics tools
         shell: bash -l {0}
         run: |
-          conda install -c bioconda -c conda-forge minimap2 samtools bcftools hapcut2 whatshap htslib jupyter pysam python=3.10 -y
+          conda install -c bioconda -c conda-forge minimap2 samtools bcftools hapcut2 whatshap htslib jupyter pysam igv python=3.10 -y
 
       - name: Week 5 - Run bioinformatics pipeline
         shell: bash -l {0}
@@ -127,12 +127,9 @@ jobs:
         shell: bash -l {0}
         run: |
           cd week5
-          echo "=== Downloading IGV ==="
-          if [ ! -d "IGV_2.16.2" ]; then
-            wget -q https://data.broadinstitute.org/igv/projects/downloads/2.16/IGV_2.16.2.zip
-            unzip -q IGV_2.16.2.zip
-            echo "✓ IGV downloaded"
-          fi
+          
+          echo "=== Checking IGV installation ==="
+          which igv || echo "IGV not found in PATH"
           
           echo "=== Creating IGV batch script ==="
           mkdir -p igv_images/auto
@@ -162,7 +159,8 @@ jobs:
           EOF
           
           echo "=== Running IGV in headless mode ==="
-          xvfb-run --auto-servernum java -Xmx4g -jar IGV_2.16.2/lib/igv.jar -b igv_batch_script.txt || echo "IGV batch script completed"
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
+            igv -b igv_batch_script.txt || echo "IGV batch script completed"
           
           echo "=== Verifying screenshots ==="
           if [ -d "igv_images/auto" ]; then
@@ -173,7 +171,11 @@ jobs:
               echo "Screenshot details:"
               ls -lh igv_images/auto/*.png 2>/dev/null
               md5sum igv_images/auto/*.png 2>/dev/null
+            else
+              echo "⚠ No screenshots generated"
             fi
+          else
+            echo "⚠ Output directory not created"
           fi
           
       - name: Week 5 - Check outputs
