@@ -91,7 +91,7 @@ jobs:
           ls -lh results/ 2>/dev/null || echo "No result files"
           
       - name: Week 5 - Upload results as artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: week5-results
