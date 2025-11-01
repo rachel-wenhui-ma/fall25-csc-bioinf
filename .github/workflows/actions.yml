@@ -68,14 +68,13 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
-          python-version: 3.9
           channels: bioconda,conda-forge,defaults
-          channel-priority: strict
+          channel-priority: flexible
 
       - name: Week 5 - Install bioinformatics tools
         shell: bash -l {0}
         run: |
-          conda install -c bioconda minimap2 samtools bcftools hapcut2 whatshap htslib jupyter pysam -y
+          conda install -c bioconda -c conda-forge minimap2 samtools bcftools hapcut2 whatshap htslib jupyter pysam python=3.10 -y
 
       - name: Week 5 - Run bioinformatics pipeline
         shell: bash -l {0}
