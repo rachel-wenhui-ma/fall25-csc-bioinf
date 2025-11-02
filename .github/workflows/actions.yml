@@ -133,30 +133,52 @@ jobs:
           
           echo "=== Creating IGV batch script ==="
           mkdir -p igv_images/auto
-          cat > igv_batch_script.txt << 'EOF'
+          
+          # Verify BAM files exist
+          echo "Checking BAM files:"
+          ls -lh illumina_sorted.bam illumina_sorted.bam.bai
+          ls -lh pacbio_sorted.bam pacbio_sorted.bam.bai
+          
+          # Get absolute path for BAM files
+          BAM_DIR=$(pwd)
+          echo "BAM directory: ${BAM_DIR}"
+          
+          cat > igv_batch_script.txt << EOF
           new
           genome hg38
-          snapshotDirectory igv_images/auto
+          snapshotDirectory ${BAM_DIR}/igv_images/auto
           preference SAM.SHOW_SOFT_CLIPPED true
-          load illumina_sorted.bam
-          load pacbio_sorted.bam
-          goto chr10:94772788
+          
+          # Load reference genome and BAM files with absolute paths
+          load ${BAM_DIR}/illumina_sorted.bam
+          load ${BAM_DIR}/pacbio_sorted.bam
+          
+          # Screenshot 1: Illumina-only variant
+          goto chr10:94772688-94772888
           sort base
-          collapse
-          maxPanelHeight 500
+          squish
+          maxPanelHeight 2000
           snapshot auto_chr10_94772788_illumina_only.png
-          goto chr10:94947469
+          
+          # Screenshot 2: PacBio-only variant
+          goto chr10:94947369-94947569
           sort base
-          collapse
-          maxPanelHeight 500
+          squish
+          maxPanelHeight 2000
           snapshot auto_chr10_94947469_pacbio_only.png
-          goto chr10:94761900
+          
+          # Screenshot 3: Shared variant
+          goto chr10:94761800-94762000
           sort base
-          collapse
-          maxPanelHeight 500
+          squish
+          maxPanelHeight 2000
           snapshot auto_chr10_94761900_shared.png
+          
           exit
           EOF
+          
+          echo "=== Batch script content ==="
+          cat igv_batch_script.txt
           
           echo "=== Running IGV in headless mode ==="
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
