@@ -134,10 +134,23 @@ jobs:
           echo "=== Creating IGV batch script ==="
           mkdir -p igv_images/auto
           
-          # Verify BAM files exist
-          echo "Checking BAM files:"
-          ls -lh illumina_sorted.bam illumina_sorted.bam.bai
-          ls -lh pacbio_sorted.bam pacbio_sorted.bam.bai
+          # Verify BAM files and their indices exist (they're in results/ directory)
+          echo "Checking BAM files and indices:"
+          ls -lh results/illumina.bam results/illumina.bam.bai 2>&1
+          ls -lh results/pacbio.bam results/pacbio.bam.bai 2>&1
+          
+          # Ensure indices exist (create if missing)
+          if [ ! -f results/illumina.bam.bai ]; then
+            echo "Creating illumina BAM index..."
+            samtools index results/illumina.bam
+          fi
+          if [ ! -f results/pacbio.bam.bai ]; then
+            echo "Creating pacbio BAM index..."
+            samtools index results/pacbio.bam
+          fi
+          
+          echo "BAM indices verified:"
+          ls -lh results/*.bam.bai
           
           # Get absolute path for BAM files
           BAM_DIR=$(pwd)
@@ -149,9 +162,9 @@ jobs:
           snapshotDirectory ${BAM_DIR}/igv_images/auto
           preference SAM.SHOW_SOFT_CLIPPED true
           
-          # Load reference genome and BAM files with absolute paths
-          load ${BAM_DIR}/illumina_sorted.bam
-          load ${BAM_DIR}/pacbio_sorted.bam
+          # Load BAM files with absolute paths (BAM and BAI must be in same directory)
+          load ${BAM_DIR}/results/illumina.bam
+          load ${BAM_DIR}/results/pacbio.bam
           
           # Screenshot 1: Illumina-only variant
           goto chr10:94772688-94772888
