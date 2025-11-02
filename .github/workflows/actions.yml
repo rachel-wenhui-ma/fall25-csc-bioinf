@@ -161,29 +161,32 @@ jobs:
           genome hg38
           snapshotDirectory ${BAM_DIR}/igv_images/auto
           preference SAM.SHOW_SOFT_CLIPPED true
+          preference SAM.SHOW_CENTER_LINE true
+          preference SAM.BASE_QUALITY_MIN 0
+          preference SAM.SHOW_ALL_BASES true
           
           # Load BAM files with absolute paths (BAM and BAI must be in same directory)
           load ${BAM_DIR}/results/illumina.bam
           load ${BAM_DIR}/results/pacbio.bam
           
-          # Screenshot 1: Illumina-only variant
-          goto chr10:94772688-94772888
+          # Screenshot 1: Illumina-only variant (tight zoom for base visibility)
+          goto chr10:94772773-94772803
           sort base
-          squish
+          expand
           maxPanelHeight 2000
           snapshot auto_chr10_94772788_illumina_only.png
           
-          # Screenshot 2: PacBio-only variant
-          goto chr10:94947369-94947569
+          # Screenshot 2: PacBio-only variant (tight zoom for base visibility)
+          goto chr10:94947454-94947484
           sort base
-          squish
+          expand
           maxPanelHeight 2000
           snapshot auto_chr10_94947469_pacbio_only.png
           
-          # Screenshot 3: Shared variant
-          goto chr10:94761800-94762000
+          # Screenshot 3: Shared variant (tight zoom for base visibility)
+          goto chr10:94761885-94761915
           sort base
-          squish
+          expand
           maxPanelHeight 2000
           snapshot auto_chr10_94761900_shared.png
           
