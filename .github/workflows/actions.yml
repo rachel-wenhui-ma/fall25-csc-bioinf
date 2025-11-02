@@ -162,29 +162,30 @@ jobs:
           snapshotDirectory ${BAM_DIR}/igv_images/auto
           preference SAM.SHOW_SOFT_CLIPPED true
           preference SAM.SHOW_CENTER_LINE true
-          preference SAM.BASE_QUALITY_MIN 0
-          preference SAM.SHOW_ALL_BASES true
+          preference SAM.SHOW_MISMATCHES true
+          preference SAM.SHADE_BASE_BY_QUALITY false
+          preference SAM.COLOR_BY_TAG false
           
           # Load BAM files with absolute paths (BAM and BAI must be in same directory)
           load ${BAM_DIR}/results/illumina.bam
           load ${BAM_DIR}/results/pacbio.bam
           
-          # Screenshot 1: Illumina-only variant (tight zoom for base visibility)
-          goto chr10:94772773-94772803
+          # Screenshot 1: Illumina-only variant (200bp view, show mismatches only)
+          goto chr10:94772688-94772888
           sort base
           expand
           maxPanelHeight 2000
           snapshot auto_chr10_94772788_illumina_only.png
           
-          # Screenshot 2: PacBio-only variant (tight zoom for base visibility)
-          goto chr10:94947454-94947484
+          # Screenshot 2: PacBio-only variant (200bp view, show mismatches only)
+          goto chr10:94947369-94947569
           sort base
           expand
           maxPanelHeight 2000
           snapshot auto_chr10_94947469_pacbio_only.png
           
-          # Screenshot 3: Shared variant (tight zoom for base visibility)
-          goto chr10:94761885-94761915
+          # Screenshot 3: Shared variant (200bp view, show mismatches only)
+          goto chr10:94761800-94762000
           sort base
           expand
           maxPanelHeight 2000
