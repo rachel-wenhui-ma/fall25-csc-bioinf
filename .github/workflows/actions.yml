@@ -115,7 +115,6 @@ jobs:
           channels: bioconda,conda-forge,defaults
           channel-priority: flexible
           activate-environment: scrna
-          python-version: 3.10
 
       - name: Week 6 - Install system tools for data download
         run: |
