@@ -128,7 +128,10 @@ jobs:
       - name: Week 6 - Install Python packages
         shell: bash -l {0}
         run: |
-          pip install scanpy anndata pyroe leidenalg python-igraph celltypist jupyter numpy pandas scipy matplotlib seaborn
+          # Install core scientific packages via conda for better binary compatibility
+          conda install -c conda-forge numpy pandas scipy matplotlib seaborn -y
+          # Install bioinformatics packages via pip
+          pip install scanpy anndata pyroe leidenalg python-igraph celltypist jupyter
 
       - name: Week 6 - Extract data files
         run: |
