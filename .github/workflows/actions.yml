@@ -120,18 +120,19 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y wget curl
 
-      - name: Week 6 - Install bioinformatics tools
+      - name: Week 6 - Install bioinformatics tools and Python packages
         shell: bash -l {0}
         run: |
-          conda install -c bioconda -c conda-forge salmon alevin-fry gffread python=3.10 -y
-
-      - name: Week 6 - Install Python packages
-        shell: bash -l {0}
-        run: |
-          # Install core scientific packages via conda for better binary compatibility
-          conda install -c conda-forge numpy pandas scipy matplotlib seaborn -y
-          # Install bioinformatics packages via pip
-          pip install scanpy anndata pyroe leidenalg python-igraph celltypist jupyter
+          # Uninstall any pip-installed pandas/numpy to avoid conflicts
+          pip uninstall -y pandas numpy scipy || true
+          # Install all packages via conda for better binary compatibility
+          conda install -c bioconda -c conda-forge \
+            salmon alevin-fry gffread python=3.10 \
+            numpy pandas scipy matplotlib seaborn \
+            scanpy anndata leidenalg python-igraph \
+            jupyter -y
+          # Install packages not available in conda via pip
+          pip install pyroe celltypist
 
       - name: Week 6 - Extract data files
         run: |
