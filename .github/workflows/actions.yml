@@ -114,7 +114,7 @@ jobs:
           auto-update-conda: true
           channels: bioconda,conda-forge,defaults
           channel-priority: flexible
-          environment-name: scrna
+          activate-environment: scrna
           python-version: 3.10
 
       - name: Week 6 - Install system tools for data download
@@ -125,6 +125,8 @@ jobs:
       - name: Week 6 - Install bioinformatics tools and Python packages
         shell: bash -l {0}
         run: |
+          # Create scrna environment if it doesn't exist
+          conda create -n scrna python=3.10 -y || true
           conda activate scrna
           # Force reinstall numpy and pandas to ensure binary compatibility
           conda install -c conda-forge numpy=1.24 pandas=2.0 -y --force-reinstall
