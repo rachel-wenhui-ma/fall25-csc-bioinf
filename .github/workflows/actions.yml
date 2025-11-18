@@ -64,180 +64,132 @@ jobs:
           # bash evaluate.sh | tee results.txt
           echo "Week 4 step disabled"
 
-      - name: Week 5 - Setup Miniconda for bioinformatics tools
+      - name: Week 5 - Setup Miniconda for bioinformatics tools (disabled for Week 6)
+        # Disabled for Week 6 submission; preserved for reference
+        # uses: conda-incubator/setup-miniconda@v2
+        # with:
+        #   auto-update-conda: true
+        #   channels: bioconda,conda-forge,defaults
+        #   channel-priority: flexible
+        run: echo "Week 5 setup disabled"
+
+      - name: Week 5 - Install bioinformatics tools (disabled for Week 6)
+        shell: bash -l {0}
+        run: |
+          # Disabled for Week 6 submission; preserved for reference
+          # conda install -c bioconda -c conda-forge minimap2 samtools bcftools hapcut2 whatshap htslib jupyter pysam python=3.10 -y
+          echo "Week 5 step disabled"
+
+      - name: Week 5 - Run bioinformatics pipeline (disabled for Week 6)
+        shell: bash -l {0}
+        run: |
+          # Disabled for Week 6 submission; preserved for reference
+          # cd week5
+          # echo "=== Starting notebook execution ==="
+          # jupyter nbconvert --to notebook --execute week5.ipynb --output week5_executed.ipynb --ExecutePreprocessor.timeout=3600
+          # echo "=== Notebook execution complete ==="
+          echo "Week 5 step disabled"
+          
+      - name: Week 5 - Check outputs (disabled for Week 6)
+        shell: bash -l {0}
+        run: |
+          # Disabled for Week 6 submission; preserved for reference
+          # cd week5
+          # echo "=== Results directory ==="
+          # ls -lh results/ 2>/dev/null || echo "No result files"
+          echo "Week 5 step disabled"
+          
+      - name: Week 5 - Upload results as artifacts (disabled for Week 6)
+        uses: actions/upload-artifact@v4
+        if: false
+        with:
+          name: week5-results
+          path: |
+            week5/results/*
+          retention-days: 7
+
+      - name: Week 6 - Setup Miniconda for single-cell RNA-seq tools
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
           channels: bioconda,conda-forge,defaults
           channel-priority: flexible
 
-      - name: Week 5 - Install bioinformatics tools
-        shell: bash -l {0}
+      - name: Week 6 - Install system tools for data download
         run: |
-          conda install -c bioconda -c conda-forge minimap2 samtools bcftools hapcut2 whatshap htslib jupyter pysam igv python=3.10 -y
+          sudo apt-get update -qq
+          sudo apt-get install -y wget curl
 
-      - name: Week 5 - Run bioinformatics pipeline
+      - name: Week 6 - Install bioinformatics tools
         shell: bash -l {0}
         run: |
-          cd week5
+          conda install -c bioconda -c conda-forge salmon alevin-fry gffread python=3.10 -y
+
+      - name: Week 6 - Install Python packages
+        shell: bash -l {0}
+        run: |
+          pip install scanpy anndata pyroe leidenalg python-igraph celltypist jupyter numpy pandas scipy matplotlib seaborn
+
+      - name: Week 6 - Run single-cell RNA-seq analysis pipeline
+        shell: bash -l {0}
+        run: |
+          cd week6
           echo "=== Starting notebook execution ==="
-          jupyter nbconvert --to notebook --execute week5.ipynb --output week5_executed.ipynb --ExecutePreprocessor.timeout=3600
+          jupyter nbconvert --to notebook --execute week6.ipynb --output week6_executed.ipynb --ExecutePreprocessor.timeout=7200
           echo "=== Notebook execution complete ==="
           echo ""
+          echo "=== Checking data directory ==="
+          ls -lh data/ 2>/dev/null || echo "No data files"
+          if [ -d data/toy_ref_read ]; then
+            echo "✓ Data directory exists"
+            echo "  FASTQ files: $(find data/toy_ref_read -name '*.fastq' | wc -l)"
+            echo "  Reference files: $(find data/toy_ref_read -name '*.fa' -o -name '*.gtf' | wc -l)"
+          fi
+          if [ -f data/3M-february-2018.txt.gz ]; then
+            echo "✓ Whitelist file exists"
+          fi
+          echo ""
           echo "=== Checking results directory ==="
-          ls -lh results/
+          ls -lh results/ 2>/dev/null || echo "No result files"
           echo ""
-          echo "=== Checking Step 3 VCF files ==="
-          if [ -f results/illumina.vcf ]; then
-            echo "Illumina variants: $(bcftools view -H results/illumina.vcf | wc -l)"
-          fi
-          if [ -f results/pacbio.vcf ]; then
-            echo "PacBio variants: $(bcftools view -H results/pacbio.vcf | wc -l)"
+          echo "=== Checking quantification outputs ==="
+          if [ -d results/af_quant_tx/alevin ]; then
+            echo "Quantification matrix shape:"
+            python -c "import scipy.io; mtx = scipy.io.mmread('results/af_quant_tx/alevin/quants_mat.mtx'); print(f'  {mtx.shape[0]} cells x {mtx.shape[1]} genes')"
           fi
           echo ""
-          echo "=== Checking Step 4 phasing output ==="
-          if [ -f results/illumina_phased.hapcut ]; then
-            echo "Illumina HapCUT2 output lines: $(wc -l < results/illumina_phased.hapcut)"
-            echo "Illumina phased blocks: $(grep -c "BLOCK" results/illumina_phased.hapcut || echo 0)"
-          else
-            echo "WARNING: illumina_phased.hapcut not found"
+          echo "=== Checking processed data ==="
+          if [ -f results/adata_processed.h5ad ]; then
+            echo "✓ Processed AnnData file exists"
           fi
-          if [ -f results/pacbio_phased.hapcut ]; then
-            echo "PacBio HapCUT2 output lines: $(wc -l < results/pacbio_phased.hapcut)"
-            echo "PacBio phased blocks: $(grep -c "BLOCK" results/pacbio_phased.hapcut || echo 0)"
-          else
-            echo "WARNING: pacbio_phased.hapcut not found"
-          fi
-          echo ""
-          echo "=== Checking phased VCF files ==="
-          if [ -f results/illumina_phased.vcf.gz ]; then
-            echo "Illumina phased VCF variants: $(bcftools view -H results/illumina_phased.vcf.gz | wc -l)"
-          fi
-          if [ -f results/pacbio_phased.vcf.gz ]; then
-            echo "PacBio phased VCF variants: $(bcftools view -H results/pacbio_phased.vcf.gz | wc -l)"
+          if [ -f results/adata_annotated.h5ad ]; then
+            echo "✓ Annotated AnnData file exists"
           fi
           
-      - name: Week 5 - Install xvfb for headless IGV
+      - name: Week 6 - Check outputs
         shell: bash -l {0}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-          
-      - name: Week 5 - Generate IGV screenshots
-        shell: bash -l {0}
-        run: |
-          cd week5
-          
-          echo "=== Checking IGV installation ==="
-          which igv || echo "IGV not found in PATH"
-          
-          echo "=== Creating IGV batch script ==="
-          mkdir -p igv_images/auto
-          
-          # Verify BAM files and their indices exist (they're in results/ directory)
-          echo "Checking BAM files and indices:"
-          ls -lh results/illumina.bam results/illumina.bam.bai 2>&1
-          ls -lh results/pacbio.bam results/pacbio.bam.bai 2>&1
-          
-          # Ensure indices exist (create if missing)
-          if [ ! -f results/illumina.bam.bai ]; then
-            echo "Creating illumina BAM index..."
-            samtools index results/illumina.bam
-          fi
-          if [ ! -f results/pacbio.bam.bai ]; then
-            echo "Creating pacbio BAM index..."
-            samtools index results/pacbio.bam
-          fi
-          
-          echo "BAM indices verified:"
-          ls -lh results/*.bam.bai
-          
-          # Get absolute path for BAM files
-          BAM_DIR=$(pwd)
-          echo "BAM directory: ${BAM_DIR}"
-          
-          cat > igv_batch_script.txt << EOF
-          new
-          genome hg38
-          snapshotDirectory ${BAM_DIR}/igv_images/auto
-          preference SAM.SHOW_SOFT_CLIPPED true
-          preference SAM.SHOW_CENTER_LINE true
-          preference SAM.SHOW_MISMATCHES true
-          preference SAM.SHADE_BASE_BY_QUALITY false
-          preference SAM.COLOR_BY_TAG false
-          
-          # Load BAM files with absolute paths (BAM and BAI must be in same directory)
-          load ${BAM_DIR}/results/illumina.bam
-          load ${BAM_DIR}/results/pacbio.bam
-          
-          # Screenshot 1: Illumina-only variant (200bp view, show mismatches only)
-          goto chr10:94772688-94772888
-          sort base
-          expand
-          maxPanelHeight 2000
-          snapshot auto_chr10_94772788_illumina_only.png
-          
-          # Screenshot 2: PacBio-only variant (200bp view, show mismatches only)
-          goto chr10:94947369-94947569
-          sort base
-          expand
-          maxPanelHeight 2000
-          snapshot auto_chr10_94947469_pacbio_only.png
-          
-          # Screenshot 3: Shared variant (200bp view, show mismatches only)
-          goto chr10:94761800-94762000
-          sort base
-          expand
-          maxPanelHeight 2000
-          snapshot auto_chr10_94761900_shared.png
-          
-          exit
-          EOF
-          
-          echo "=== Batch script content ==="
-          cat igv_batch_script.txt
-          
-          echo "=== Running IGV in headless mode ==="
-          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
-            igv -b igv_batch_script.txt || echo "IGV batch script completed"
-          
-          echo "=== Verifying screenshots ==="
-          if [ -d "igv_images/auto" ]; then
-            echo "✓ Output directory exists"
-            screenshot_count=$(ls -1 igv_images/auto/*.png 2>/dev/null | wc -l)
-            echo "✓ Found $screenshot_count PNG files"
-            if [ $screenshot_count -gt 0 ]; then
-              echo "Screenshot details:"
-              ls -lh igv_images/auto/*.png 2>/dev/null
-              md5sum igv_images/auto/*.png 2>/dev/null
-            else
-              echo "⚠ No screenshots generated"
-            fi
-          else
-            echo "⚠ Output directory not created"
-          fi
-          
-      - name: Week 5 - Check outputs
-        shell: bash -l {0}
-        run: |
-          cd week5
+          cd week6
           echo "=== Results directory ==="
           ls -lh results/ 2>/dev/null || echo "No result files"
+          echo ""
+          echo "=== Checking key output files ==="
+          if [ -f results/adata_annotated.h5ad ]; then
+            echo "✓ Annotated data file: $(ls -lh results/adata_annotated.h5ad | awk '{print $5}')"
+          fi
+          if [ -d results/af_quant_tx ]; then
+            echo "✓ Quantification directory exists"
+          fi
           
-      - name: Week 5 - Upload results as artifacts
+      - name: Week 6 - Upload results as artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: week5-results
+          name: week6-results
           path: |
-            week5/results/*.bam
-            week5/results/*.bam.bai
-            week5/results/*.vcf
-            week5/results/*.vcf.gz
-            week5/results/*.vcf.gz.csi
-            week5/results/*.hapcut
-            week5/results/*_fragments.txt
-            week5/results/chr10.fa
-            week5/week5_executed.ipynb
-            week5/igv_images/auto/*.png
+            week6/results/adata_*.h5ad
+            week6/results/af_quant_tx/alevin/*.mtx
+            week6/results/af_quant_tx/alevin/*.txt
+            week6/results/t2g_2col.tsv
+            week6/week6_executed.ipynb
           retention-days: 7
